@@ -38,6 +38,7 @@ class ModelBase(nn.Module):
             self.train_dataloader = train_dataloader
             self.test_dataloader = test_dataloader
             self.val_dataloader = val_dataloader
+            self.to(self.device)
 
             ## get optimizer
             self.configure_optimizers(optimizer_name, lr, weight_decay)
@@ -48,15 +49,13 @@ class ModelBase(nn.Module):
             ## some trainning  setting 
             self.configure_train_set(save_model_dir)
             
-            self.configure_train_logging()
-            
             ## get net pretrain parameters if need 
             self.init_model()
+            
+            self.configure_train_logging()
 
             ## get train log
             self.configure_train_log()
-            
-            self.to(self.device)
             
             self.begin_trainning()
             
@@ -79,8 +78,11 @@ class ModelBase(nn.Module):
     def configure_train_set(self, save_model_dir):
         self.first_trainning = True
         self.save_model_dir = save_model_dir
-        self.check_point_path = save_model_dir  + "/checkpoint.pth"
-        self.log_path = save_model_dir + "/train.log"
+        self.check_point_path =  self.save_model_dir  + "/checkpoint.pth"
+        self.log_path =  self.save_model_dir + "/train.log"
+        os.makedirs(self.save_model_dir,  exist_ok=True)
+        with open(self.log_path, "w") as f:
+            pass  
     
     def configure_train_logging(self):
         self.logger = logging.getLogger(__name__)
@@ -108,6 +110,8 @@ class ModelBase(nn.Module):
             self.load_pretrained(self.save_model_dir)  
             self.first_trainning = False
         else:
+            with open(self.log_path, "w") as f:
+                pass  
             os.makedirs(self.save_model_dir, exist_ok = True)
             self.first_trainning = True
     
@@ -116,18 +120,17 @@ class ModelBase(nn.Module):
             self.best_loss = float("inf")
             self.last_epoch = 0
         else:
-            checkpoint = torch.load(self.check_point_path, map_location=self.device)
+            checkpoint = torch.load(self.check_point_path, map_location = self.device)
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
             self.best_loss = checkpoint["loss"]
             self.last_epoch = checkpoint["epoch"] + 1
-            # optimizer.param_groups[0]['lr'] = 0.0001
         
     def begin_trainning(self):
             try:
                 for each in range(self.last_epoch, self.total_epoch):
                     self.epoch = each
-                    self.logger.info(f"Learning rate: {self.optimizer.param_groups[0]['lr']}\n")
+                    self.logger.info(f"Learning rate: {self.optimizer.param_groups[0]['lr']}")
                     self.train_one_epoch()
                     test_loss = self.test_one_epoch()
                     self.lr_scheduler.step(test_loss)
@@ -153,6 +156,7 @@ class ModelBase(nn.Module):
             }, 
             self.check_point_path
         )
+        print("model saved !")
     
     def train_one_epoch(self):
         self.train().to(self.device)
@@ -202,9 +206,10 @@ class ModelBase(nn.Module):
                 total_loss.update(out_criterion["total_loss"].item())
 
         self.logger.info("Test Epoch: {:d}, total_loss: {:.4f}".format(self.epoch,total_loss.avg))
+        return total_loss.avg
     
     @abstractmethod
-    def eval_model(self):
+    def eval_model(self,val_dataloader):
         pass
         
     @abstractmethod    
