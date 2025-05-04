@@ -1,0 +1,33 @@
+# config.yml
+
+model_type:
+  
+# mdoel args
+model:        
+  device: cuda   
+
+# trainning args
+traininng:
+  batch_size: 2               
+  epochs: 1000          
+  learning_rate: 0.0001   
+  optimizer: Adam              
+  weight_decay: 0.0001
+  clip_max_norm: 0.5
+  factor: 0.3
+  patience: 15         
+  device: cuda
+
+# dataset args
+dataset_type:
+  
+dataset:
+  train_data_path: 
+  test_data_path: 
+  valid_data_path: 
+
+
+
+logging:
+  eval_interval: 100           
+  save_dir: 
