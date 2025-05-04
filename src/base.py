@@ -98,15 +98,16 @@ class ModelBase(nn.Module):
 
             # interrupt trianning
             except KeyboardInterrupt:
-                    torch.save(                
-                        {
-                            "epoch": epoch,
-                            "loss": loss,
-                            "optimizer": optimizer.state_dict(),
-                            "lr_scheduler": lr_scheduler.state_dict()
-                        },
-                        check_point_path
-                    )
+                    torch.save({"epoch": epoch,
+                                        "loss": loss,
+                                        "optimizer": optimizer.state_dict(),
+                                        "lr_scheduler": lr_scheduler.state_dict()
+                                    },check_point_path)
+            torch.save({"epoch": epoch,
+                    "loss": loss,
+                    "optimizer": optimizer.state_dict(),
+                    "lr_scheduler": lr_scheduler.state_dict()
+                },check_point_path)
     
     def train_one_epoch(self, epoch, train_dataloader, optimizer, clip_max_norm, log_path = None):
         self.train().to(self.device)
