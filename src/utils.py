@@ -19,12 +19,6 @@ class AverageMeter:
         self.count += n
         self.avg = self.sum / self.count
 
-def clip_gradient(optimizer, grad_clip):
-    for group in optimizer.param_groups:
-        for param in group["params"]:
-            if param.grad is not None:
-                param.grad.data.clamp_(-grad_clip, grad_clip)
-
 def recursive_collate_fn(batch):
     if isinstance(batch[0], dict):
         return {key: recursive_collate_fn([b[key] for b in batch]) for key in batch[0]}
