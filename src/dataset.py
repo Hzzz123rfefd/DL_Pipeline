@@ -33,5 +33,5 @@ class DatasetBase(Dataset):
     def __getitem__(self, idx):
         pass
         
-def collate_fn(self, batch):
-    return recursive_collate_fn(batch)
+    def collate_fn(self, batch):
+        return recursive_collate_fn(batch)
