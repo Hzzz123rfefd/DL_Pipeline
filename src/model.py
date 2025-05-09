@@ -8,6 +8,13 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from src.utils import AverageMeter
 import logging
+import torch
+from torch.utils.data import DataLoader
+import torch.nn as nn
+from transformers import AutoModelForCausalLM, AutoConfig
+from peft import get_peft_model, LoraConfig, TaskType, PeftModel
+from src.utils import *
+
 
 class ModelBase(nn.Module):
     def __init__(
@@ -300,3 +307,63 @@ class ModelDiffusionBase(ModelRegression):
 
     def save_pretrained(self,  save_model_dir):
         torch.save(self.state_dict(), save_model_dir + "/model.pth")    
+        
+class ModelLLM(ModelBase):
+    def __init__(
+        self,
+        model_name_or_path,
+        device = "cuda"
+    ):
+        super().__init__(device)
+        self.model_name_or_path = model_name_or_path
+        # load llm model
+        self.base_model =  AutoModelForCausalLM.from_pretrained(
+            self.model_name_or_path,
+            torch_dtype=torch.float32
+        )
+        self.config = AutoConfig.from_pretrained(model_name_or_path)
+        self.hidden_dim = self.config.hidden_size
+    
+class ModelLLMWithLoraBase(ModelBase):
+    def __init__(
+        self,
+        model_name_or_path,
+        lora_path = None, 
+        device = "cuda"
+    ):
+        super().__init__(device)
+        self.model_name_or_path = model_name_or_path
+        self.lora_path = lora_path
+        # load llm model
+        self.base_model =  AutoModelForCausalLM.from_pretrained(
+            self.model_name_or_path,
+            torch_dtype=torch.float32
+        )
+        self.config = AutoConfig.from_pretrained(model_name_or_path)
+        self.hidden_dim = self.config.hidden_size
+        self.backbone = self.load_model_with_lora(self.lora_path)
+        self.backbone.print_trainable_parameters()
+        
+    def load_model_with_lora(self, lora_path):
+        if lora_path == None:
+            self.lora_config = LoraConfig(
+                task_type = TaskType.CAUSAL_LM, 
+                inference_mode = False,
+                r = 8,
+                lora_alpha = 16,                                                                                  # LoRA 的缩放因子
+                lora_dropout = 0.05 
+            )
+            return get_peft_model(self.base_model, self.lora_config)
+
+        return PeftModel.from_pretrained(
+            model = self.base_model, 
+            model_id = lora_path,
+            is_trainable = True
+        )
+    
+    def load_pretrained(self, save_model_dir):
+        if save_model_dir != None:
+            self.load_model_with_lora(save_model_dir)
+
+    def save_pretrained(self, save_model_dir):
+        self.backbone.save_pretrained(save_model_dir)
