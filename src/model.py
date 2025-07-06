@@ -116,6 +116,11 @@ class ModelBase(nn.Module):
         if  os.path.isdir(self.save_model_dir) and os.path.exists(self.check_point_path) and os.path.exists(self.log_path):
             self.load_pretrained(self.save_model_dir)  
             self.first_trainning = False
+        elif os.path.isdir(self.save_model_dir) and not os.path.exists(self.check_point_path) and not os.path.exists(self.log_path):
+            with open(self.log_path, "w") as f:
+                pass  
+            self.load_pretrained(self.save_model_dir)  
+            self.first_trainning = True
         else:
             with open(self.log_path, "w") as f:
                 pass  
