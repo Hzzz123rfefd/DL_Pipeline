@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 from src import models, datasets
-from src.utils import load_config
+from third_party.DL_Pipeline.src.utils import load_config
 import argparse
 
 

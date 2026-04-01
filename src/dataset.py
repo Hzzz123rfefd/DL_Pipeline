@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 import datasets
 from abc import abstractmethod
-from src.utils import recursive_collate_fn
+from third_party.DL_Pipeline.src.utils import recursive_collate_fn
 
 class DatasetBase(Dataset):
     def __init__(

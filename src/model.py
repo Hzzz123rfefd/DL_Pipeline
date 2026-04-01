@@ -1,19 +1,16 @@
 import os
-import torch
 from torch import optim
-import torch.nn as nn
 from torch.utils.data import DataLoader
 from abc import abstractmethod
 from tqdm import tqdm
 import torch.nn.functional as F
-from src.utils import AverageMeter
 import logging
 import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 from transformers import AutoModelForCausalLM, AutoConfig
 from peft import get_peft_model, LoraConfig, TaskType, PeftModel
-from src.utils import *
+from third_party.DL_Pipeline.src.utils import *
 
 
 class ModelBase(nn.Module):
@@ -229,10 +226,10 @@ class ModelBase(nn.Module):
         pass
     
     def load_pretrained(self, save_model_dir):
-        self.load_state_dict(torch.load(save_model_dir + "/model.pth"))
+        self.load_state_dict(torch.load(os.path.join(save_model_dir, "model.pth")))
 
     def save_pretrained(self, save_model_dir):
-        torch.save(self.state_dict(), save_model_dir + "/model.pth")
+        torch.save(self.state_dict(), os.path.join(save_model_dir, "model.pth"))
         
 class ModelRegression(ModelBase):
     def compute_loss(self, input):
@@ -240,7 +237,32 @@ class ModelRegression(ModelBase):
             "total_loss": F.mse_loss(input["predict"], input["label"])
         }
         return output
-
+    
+    def eval_model(self, val_dataloader):
+        mse = AverageMeter()
+        mae = AverageMeter()
+        y_true = []
+        y_pre = []
+        with torch.no_grad():
+            for batch_id, inputs in enumerate(val_dataloader):
+                b, _ = inputs["feature"].shape
+                output = self.forward(inputs)
+                y_true.append(inputs["label"].detach().cpu().numpy())
+                y_pre.append(output["predict"].detach().cpu().numpy())
+                for i in range(b):
+                    mse.update(calculate_mse(output["predict"][i,:].detach().cpu().numpy(), inputs["label"][i,:].cpu().numpy()))
+                    mae.update(calculate_mae(output["predict"][i,:].detach().cpu().numpy(), inputs["label"][i,:].cpu().numpy()))
+        y_true_all = np.concatenate(y_true, axis=0).reshape(-1)
+        y_pre_all = np.concatenate(y_pre, axis=0).reshape(-1)
+        r2 = calculate_r2(y_true_all, y_pre_all)
+        print("MSE = {:.4f}, MAE = {:.4f}, R2 = {:.2f}\n".format(mse.avg, mae.avg, r2))
+        output = {
+            "MSE": mse.avg,
+            "MAE": mae.avg,
+            "R2":r2
+        }
+        return output
+                
 class ModelBinaryClassification(ModelBase):
     def compute_loss(self, input):
         output = {

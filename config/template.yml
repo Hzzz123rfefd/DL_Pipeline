@@ -1,5 +1,4 @@
 # config.yml
-
 model_type:
   
 # mdoel args
@@ -25,8 +24,6 @@ dataset:
   train_data_path: 
   test_data_path: 
   valid_data_path: 
-
-
 
 logging:
   eval_interval: 100           

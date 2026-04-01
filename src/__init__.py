@@ -5,7 +5,7 @@ if submodule_root not in sys.path:
     sys.path.insert(0, submodule_root)
 
 from third_party.DL_Pipeline.src.model import *
-from src.utils import *
+from third_party.DL_Pipeline.src.utils import *
 
 datasets = {
 }
